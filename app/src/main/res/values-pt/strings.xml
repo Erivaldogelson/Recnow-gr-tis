@@ -60,7 +60,8 @@
     <string name="purchase_unavailable">A compra ainda nao esta disponivel. Confira o produto no Play Console.</string>
     <string name="purchase_restored">Compra restaurada.</string>
     <string name="purchase_started">Abrindo compra pelo Google Play...</string>
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
-    <string name="admob_banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="admob_app_id">ca-app-pub-4473946252546358~6988276870</string>
+    <string name="admob_banner_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
+    <string name="admob_recording_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
     <string name="remove_ads_product_id">remove_ads</string>
 </resources>

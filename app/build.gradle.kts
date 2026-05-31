@@ -11,8 +11,8 @@ android {
         applicationId = "com.erivaldogelson.recnow.grtis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 29
-        versionName = "1.0.29-grtis"
+        versionCode = 30
+        versionName = "1.0.30-grtis"
     }
 
     signingConfigs {

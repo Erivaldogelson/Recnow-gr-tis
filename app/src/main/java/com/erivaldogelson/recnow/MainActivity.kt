@@ -88,10 +88,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.erivaldogelson.recnow.ui.theme.RecnowTheme
+import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,6 +126,8 @@ private fun RecnowApp() {
     val monetizationManager = remember { runCatching { MonetizationManager(context) }.getOrNull() }
     var adsRemoved by remember { mutableStateOf(monetizationManager?.adsRemoved == true) }
     var adsReady by remember { mutableStateOf(false) }
+    var recordingAd by remember { mutableStateOf<InterstitialAd?>(null) }
+    val recordingAdUnitId = stringResource(R.string.admob_recording_ad_unit_id)
     val recordingOptions = RecordingOptions(
         qualityIndex = selectedQualityIndex,
         audioMode = audioMode
@@ -176,6 +183,64 @@ private fun RecnowApp() {
         if (permissions.isNotEmpty()) {
             notificationPermissionLauncher.launch(permissions.toTypedArray())
         }
+    }
+
+    fun loadRecordingAd() {
+        if (adsRemoved || recordingAd != null) return
+        runCatching {
+            InterstitialAd.load(
+                context,
+                recordingAdUnitId,
+                AdRequest.Builder().build(),
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        recordingAd = ad
+                    }
+
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        recordingAd = null
+                    }
+                }
+            )
+        }
+    }
+
+    fun startCapture() {
+        projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+    }
+
+    fun showRecordingAdThenStart() {
+        val activity = context as? Activity
+        val ad = recordingAd
+        if (!adsReady || adsRemoved || activity == null || ad == null) {
+            startCapture()
+            loadRecordingAd()
+            return
+        }
+
+        recordingAd = null
+        var started = false
+        fun continueRecording() {
+            if (!started) {
+                started = true
+                startCapture()
+                loadRecordingAd()
+            }
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() = continueRecording()
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) = continueRecording()
+        }
+
+        if (runCatching { ad.show(activity) }.isFailure) {
+            continueRecording()
+        }
+    }
+
+    LaunchedEffect(adsReady, adsRemoved, recordingAdUnitId) {
+        if (adsReady && !adsRemoved) loadRecordingAd()
     }
 
     DisposableEffect(monetizationManager) {
@@ -239,7 +304,7 @@ private fun RecnowApp() {
                 if (recordingState.isRecording) {
                     ContextCompat.startForegroundService(context, ScreenRecordService.stopIntent(context))
                 } else {
-                    projectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                    showRecordingAdThenStart()
                 }
             }
         )
