@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rec_red">#FF0000</color>
+    <color name="rec_red_dark">#B00000</color>
+    <color name="rec_white">#FFFFFF</color>
+    <color name="rec_black">#1D1B20</color>
+</resources>
