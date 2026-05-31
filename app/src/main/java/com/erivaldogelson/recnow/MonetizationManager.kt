@@ -36,24 +36,28 @@ class MonetizationManager(context: Context) : PurchasesUpdatedListener {
     fun start(onEntitlementChanged: (Boolean) -> Unit) {
         entitlementListener = onEntitlementChanged
         entitlementListener?.invoke(adsRemoved)
-        if (billingClient.isReady) {
+        if (runCatching { billingClient.isReady }.getOrDefault(false)) {
             refreshProductsAndPurchases()
             return
         }
-        billingClient.startConnection(object : BillingClientStateListener {
-            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    refreshProductsAndPurchases()
+        runCatching {
+            billingClient.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(billingResult: BillingResult) {
+                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                        refreshProductsAndPurchases()
+                    }
                 }
-            }
 
-            override fun onBillingServiceDisconnected() = Unit
-        })
+                override fun onBillingServiceDisconnected() = Unit
+            })
+        }
     }
 
     fun end() {
         entitlementListener = null
-        if (billingClient.isReady) billingClient.endConnection()
+        runCatching {
+            if (billingClient.isReady) billingClient.endConnection()
+        }
     }
 
     fun buyRemoveAds(activity: Activity): Boolean {
@@ -64,11 +68,13 @@ class MonetizationManager(context: Context) : PurchasesUpdatedListener {
         val flowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(productDetailsParams))
             .build()
-        return billingClient.launchBillingFlow(activity, flowParams).responseCode == BillingClient.BillingResponseCode.OK
+        return runCatching {
+            billingClient.launchBillingFlow(activity, flowParams).responseCode == BillingClient.BillingResponseCode.OK
+        }.getOrDefault(false)
     }
 
     fun restorePurchases() {
-        if (billingClient.isReady) queryOwnedPurchases()
+        if (runCatching { billingClient.isReady }.getOrDefault(false)) queryOwnedPurchases()
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
@@ -91,9 +97,11 @@ class MonetizationManager(context: Context) : PurchasesUpdatedListener {
             .setProductList(listOf(product))
             .build()
 
-        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsResult ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                productDetails = productDetailsResult.productDetailsList.firstOrNull()
+        runCatching {
+            billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsResult ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    productDetails = productDetailsResult.productDetailsList.firstOrNull()
+                }
             }
         }
     }
@@ -102,9 +110,11 @@ class MonetizationManager(context: Context) : PurchasesUpdatedListener {
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.INAPP)
             .build()
-        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                handlePurchases(purchases)
+        runCatching {
+            billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    handlePurchases(purchases)
+                }
             }
         }
     }
@@ -126,9 +136,11 @@ class MonetizationManager(context: Context) : PurchasesUpdatedListener {
         val params = AcknowledgePurchaseParams.newBuilder()
             .setPurchaseToken(purchase.purchaseToken)
             .build()
-        billingClient.acknowledgePurchase(params) { billingResult ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                setAdsRemoved(true)
+        runCatching {
+            billingClient.acknowledgePurchase(params) { billingResult ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    setAdsRemoved(true)
+                }
             }
         }
     }

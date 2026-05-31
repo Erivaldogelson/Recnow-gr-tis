@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (closeIfUnsafeRuntime()) return
         applyReadableSystemBars()
-        MobileAds.initialize(this)
+        runCatching { MobileAds.initialize(this) }
         setContent {
             RecnowTheme {
                 RecnowApp()
@@ -118,8 +118,8 @@ private fun RecnowApp() {
     var audioModeName by rememberSaveable { mutableStateOf(AudioMode.NONE.name) }
     var menuExpanded by remember { mutableStateOf(false) }
     val audioMode = runCatching { AudioMode.valueOf(audioModeName) }.getOrDefault(AudioMode.NONE)
-    val monetizationManager = remember { MonetizationManager(context) }
-    var adsRemoved by remember { mutableStateOf(monetizationManager.adsRemoved) }
+    val monetizationManager = remember { runCatching { MonetizationManager(context) }.getOrNull() }
+    var adsRemoved by remember { mutableStateOf(monetizationManager?.adsRemoved == true) }
     val recordingOptions = RecordingOptions(
         qualityIndex = selectedQualityIndex,
         audioMode = audioMode
@@ -174,8 +174,8 @@ private fun RecnowApp() {
     }
 
     DisposableEffect(monetizationManager) {
-        monetizationManager.start { adsRemoved = it }
-        onDispose { monetizationManager.end() }
+        monetizationManager?.start { adsRemoved = it }
+        onDispose { monetizationManager?.end() }
     }
 
     Scaffold(
@@ -220,14 +220,14 @@ private fun RecnowApp() {
             onAudioModeChange = { audioModeName = it.name },
             onRemoveAdsClick = {
                 val activity = context as? Activity
-                if (activity != null && monetizationManager.buyRemoveAds(activity)) {
+                if (activity != null && monetizationManager?.buyRemoveAds(activity) == true) {
                     Toast.makeText(context, context.getString(R.string.purchase_started), Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(context, context.getString(R.string.purchase_unavailable), Toast.LENGTH_LONG).show()
                 }
             },
             onRestorePurchaseClick = {
-                monetizationManager.restorePurchases()
+                monetizationManager?.restorePurchases()
                 Toast.makeText(context, context.getString(R.string.purchase_restored), Toast.LENGTH_SHORT).show()
             },
             onRecordClick = {
@@ -343,15 +343,21 @@ private fun AdBanner() {
     val context = LocalContext.current
     val adUnitId = stringResource(R.string.admob_banner_ad_unit_id)
     val adView = remember(adUnitId) {
-        AdView(context).apply {
-            setAdSize(AdSize.BANNER)
-            this.adUnitId = adUnitId
-            loadAd(AdRequest.Builder().build())
-        }
+        runCatching {
+            AdView(context).apply {
+                setAdSize(AdSize.BANNER)
+                this.adUnitId = adUnitId
+                loadAd(AdRequest.Builder().build())
+            }
+        }.getOrNull()
     }
 
     DisposableEffect(adView) {
-        onDispose { adView.destroy() }
+        onDispose { adView?.destroy() }
+    }
+
+    if (adView == null) {
+        return
     }
 
     Column(
