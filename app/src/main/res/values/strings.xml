@@ -53,15 +53,7 @@
     <string name="no_app_to_open_link">No app available to open this link.</string>
     <string name="security_debugger_detected">Unsafe runtime detected. Recnow will close.</string>
     <string name="ads_banner_title">Advertisement</string>
-    <string name="remove_ads_title">Remove ads</string>
-    <string name="remove_ads_text">Support Recnow and keep the recorder clean by removing ads forever.</string>
-    <string name="remove_ads_button">Remove ads</string>
-    <string name="restore_purchase">Restore purchase</string>
-    <string name="purchase_unavailable">Purchase is not available yet. Check the product in Play Console.</string>
-    <string name="purchase_restored">Purchase restored.</string>
-    <string name="purchase_started">Opening Google Play purchase...</string>
     <string name="admob_app_id">ca-app-pub-4473946252546358~6988276870</string>
     <string name="admob_banner_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
     <string name="admob_recording_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
-    <string name="remove_ads_product_id">remove_ads</string>
 </resources>

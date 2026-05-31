@@ -53,15 +53,7 @@
     <string name="no_app_to_open_link">Nenhum app disponivel para abrir este link.</string>
     <string name="security_debugger_detected">Ambiente inseguro detectado. O Recnow sera fechado.</string>
     <string name="ads_banner_title">Publicidade</string>
-    <string name="remove_ads_title">Remover anuncios</string>
-    <string name="remove_ads_text">Apoie o Recnow e mantenha o gravador limpo removendo os anuncios para sempre.</string>
-    <string name="remove_ads_button">Remover anuncios</string>
-    <string name="restore_purchase">Restaurar compra</string>
-    <string name="purchase_unavailable">A compra ainda nao esta disponivel. Confira o produto no Play Console.</string>
-    <string name="purchase_restored">Compra restaurada.</string>
-    <string name="purchase_started">Abrindo compra pelo Google Play...</string>
     <string name="admob_app_id">ca-app-pub-4473946252546358~6988276870</string>
     <string name="admob_banner_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
     <string name="admob_recording_ad_unit_id">ca-app-pub-4473946252546358/2783792617</string>
-    <string name="remove_ads_product_id">remove_ads</string>
 </resources>

@@ -123,8 +123,6 @@ private fun RecnowApp() {
     var audioModeName by rememberSaveable { mutableStateOf(AudioMode.NONE.name) }
     var menuExpanded by remember { mutableStateOf(false) }
     val audioMode = runCatching { AudioMode.valueOf(audioModeName) }.getOrDefault(AudioMode.NONE)
-    val monetizationManager = remember { runCatching { MonetizationManager(context) }.getOrNull() }
-    var adsRemoved by remember { mutableStateOf(monetizationManager?.adsRemoved == true) }
     var adsReady by remember { mutableStateOf(false) }
     var recordingAd by remember { mutableStateOf<InterstitialAd?>(null) }
     val recordingAdUnitId = stringResource(R.string.admob_recording_ad_unit_id)
@@ -186,7 +184,7 @@ private fun RecnowApp() {
     }
 
     fun loadRecordingAd() {
-        if (adsRemoved || recordingAd != null) return
+        if (recordingAd != null) return
         runCatching {
             InterstitialAd.load(
                 context,
@@ -212,7 +210,12 @@ private fun RecnowApp() {
     fun showRecordingAdThenStart() {
         val activity = context as? Activity
         val ad = recordingAd
-        if (!adsReady || adsRemoved || activity == null || ad == null) {
+        if (!adsReady || ad == null) {
+            startCapture()
+            loadRecordingAd()
+            return
+        }
+        val hostActivity = activity ?: run {
             startCapture()
             loadRecordingAd()
             return
@@ -234,18 +237,13 @@ private fun RecnowApp() {
             override fun onAdFailedToShowFullScreenContent(adError: AdError) = continueRecording()
         }
 
-        if (runCatching { ad.show(activity) }.isFailure) {
+        if (runCatching { ad.show(hostActivity) }.isFailure) {
             continueRecording()
         }
     }
 
-    LaunchedEffect(adsReady, adsRemoved, recordingAdUnitId) {
-        if (adsReady && !adsRemoved) loadRecordingAd()
-    }
-
-    DisposableEffect(monetizationManager) {
-        monetizationManager?.start { adsRemoved = it }
-        onDispose { monetizationManager?.end() }
+    LaunchedEffect(adsReady, recordingAdUnitId) {
+        if (adsReady) loadRecordingAd()
     }
 
     Scaffold(
@@ -285,21 +283,9 @@ private fun RecnowApp() {
             recordingState = recordingState,
             selectedQuality = selectedQuality,
             audioMode = audioMode,
-            showAds = adsReady && !adsRemoved,
+            showAds = adsReady,
             onQualitySelected = { selectedQualityIndex = RecordingQualities.indexOf(it).coerceAtLeast(0) },
             onAudioModeChange = { audioModeName = it.name },
-            onRemoveAdsClick = {
-                val activity = context as? Activity
-                if (activity != null && monetizationManager?.buyRemoveAds(activity) == true) {
-                    Toast.makeText(context, context.getString(R.string.purchase_started), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, context.getString(R.string.purchase_unavailable), Toast.LENGTH_LONG).show()
-                }
-            },
-            onRestorePurchaseClick = {
-                monetizationManager?.restorePurchases()
-                Toast.makeText(context, context.getString(R.string.purchase_restored), Toast.LENGTH_SHORT).show()
-            },
             onRecordClick = {
                 if (recordingState.isRecording) {
                     ContextCompat.startForegroundService(context, ScreenRecordService.stopIntent(context))
@@ -320,8 +306,6 @@ private fun RecordingHome(
     showAds: Boolean,
     onQualitySelected: (RecordingQuality) -> Unit,
     onAudioModeChange: (AudioMode) -> Unit,
-    onRemoveAdsClick: () -> Unit,
-    onRestorePurchaseClick: () -> Unit,
     onRecordClick: () -> Unit
 ) {
     Column(
@@ -349,62 +333,9 @@ private fun RecordingHome(
         StatusCard(recordingState, selectedQuality)
         if (showAds && !recordingState.isRecording) {
             Spacer(Modifier.height(16.dp))
-            RemoveAdsCard(
-                onRemoveAdsClick = onRemoveAdsClick,
-                onRestorePurchaseClick = onRestorePurchaseClick
-            )
-            Spacer(Modifier.height(16.dp))
             AdBanner()
         }
         Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-private fun RemoveAdsCard(
-    onRemoveAdsClick: () -> Unit,
-    onRestorePurchaseClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(22.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.remove_ads_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.remove_ads_text),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = onRemoveAdsClick,
-                    shape = CircleShape
-                ) {
-                    Text(stringResource(R.string.remove_ads_button), fontWeight = FontWeight.Bold)
-                }
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = onRestorePurchaseClick,
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                ) {
-                    Text(stringResource(R.string.restore_purchase), fontWeight = FontWeight.Bold)
-                }
-            }
-        }
     }
 }
 

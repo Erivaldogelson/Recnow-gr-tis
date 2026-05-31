@@ -16,7 +16,7 @@ Recnow GR tis e a edicao com anuncios do Recnow, um gravador de tela nativo para
   - 4K a 120 Hz
 - Interface simples em Compose Material 3 com cores dinamicas do sistema.
 - Banner de anuncios na tela principal usando Google Mobile Ads.
-- Compra unica `remove_ads` via Google Play Billing para remover anuncios.
+- Anuncio de tela cheia antes de iniciar uma gravacao, com falha segura para manter a gravacao funcionando.
 - Textos principais acompanham o idioma do sistema em ingles ou portugues.
 - Icone adaptativo com camada monochrome para temas de icones do Material You sem distorcer o desenho.
 - Tile de Configuracoes Rapidas para abrir um painel central com resolucao e microfone antes de iniciar/parar gravacao direto pela barra de controle do Android e pelo painel rapido da One UI 4+ quando o usuario adicionar o bloco.
@@ -74,13 +74,7 @@ Esta edicao usa os IDs oficiais de teste do AdMob para compilar e testar com seg
 
 Antes de publicar em producao, troque esses valores em `app/src/main/res/values/strings.xml` e `app/src/main/res/values-pt/strings.xml` pelos IDs reais do AdMob.
 
-Para remover anuncios, crie no Google Play Console um produto gerenciado com o ID:
-
-```text
-remove_ads
-```
-
-O app consulta esse produto, inicia a compra e salva/restaura o direito localmente quando o usuario possuir a compra.
+O anuncio antes da gravacao usa `admob_recording_ad_unit_id`. Para videos ou anuncios jogaveis/interativos, crie um ad unit de tela cheia compativel no AdMob, como interstitial ou rewarded, e coloque o ID nessa string.
 
 ## Build
 
