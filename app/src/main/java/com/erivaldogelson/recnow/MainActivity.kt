@@ -10,6 +10,7 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import kotlinx.coroutines.delay
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -97,7 +98,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (closeIfUnsafeRuntime()) return
         applyReadableSystemBars()
-        runCatching { MobileAds.initialize(this) }
         setContent {
             RecnowTheme {
                 RecnowApp()
@@ -120,6 +120,7 @@ private fun RecnowApp() {
     val audioMode = runCatching { AudioMode.valueOf(audioModeName) }.getOrDefault(AudioMode.NONE)
     val monetizationManager = remember { runCatching { MonetizationManager(context) }.getOrNull() }
     var adsRemoved by remember { mutableStateOf(monetizationManager?.adsRemoved == true) }
+    var adsReady by remember { mutableStateOf(false) }
     val recordingOptions = RecordingOptions(
         qualityIndex = selectedQualityIndex,
         audioMode = audioMode
@@ -163,6 +164,10 @@ private fun RecnowApp() {
     }
 
     LaunchedEffect(Unit) {
+        runCatching { MobileAds.initialize(context) }
+        delay(1_200)
+        adsReady = true
+
         val permissions = buildList {
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
             if (Build.VERSION.SDK_INT >= 36) add("android.permission.POST_PROMOTED_NOTIFICATIONS")
@@ -215,7 +220,7 @@ private fun RecnowApp() {
             recordingState = recordingState,
             selectedQuality = selectedQuality,
             audioMode = audioMode,
-            showAds = !adsRemoved,
+            showAds = adsReady && !adsRemoved,
             onQualitySelected = { selectedQualityIndex = RecordingQualities.indexOf(it).coerceAtLeast(0) },
             onAudioModeChange = { audioModeName = it.name },
             onRemoveAdsClick = {

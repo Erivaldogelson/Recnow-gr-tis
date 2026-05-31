@@ -11,8 +11,8 @@ android {
         applicationId = "com.erivaldogelson.recnow.grtis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 28
-        versionName = "1.0.28-grtis"
+        versionCode = 29
+        versionName = "1.0.29-grtis"
     }
 
     signingConfigs {
@@ -40,8 +40,8 @@ android {
     buildTypes {
         release {
             isDebuggable = false
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
