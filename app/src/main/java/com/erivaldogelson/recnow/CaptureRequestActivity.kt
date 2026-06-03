@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -21,10 +22,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
@@ -129,29 +133,40 @@ private fun CaptureRequestScreen(
     }
 
     Surface(color = Color.Transparent) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(22.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val compactScreen = maxWidth < 420.dp || maxHeight < 620.dp
+            val screenPadding = if (compactScreen) 12.dp else 22.dp
+            val cardMaxWidth = if (maxWidth >= 720.dp) 680.dp else 520.dp
+            val cardMaxHeight = maxHeight - screenPadding * 2
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(screenPadding),
+                contentAlignment = Alignment.Center
+            ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 520.dp),
+                    .widthIn(max = cardMaxWidth)
+                    .heightIn(max = cardMaxHeight),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f)
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                shape = RoundedCornerShape(30.dp)
+                shape = RoundedCornerShape(if (compactScreen) 22.dp else 30.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(22.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(if (compactScreen) 16.dp else 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (compactScreen) 12.dp else 16.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.new_recording),
                         style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -159,37 +174,72 @@ private fun CaptureRequestScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        CaptureDropdownSelector(
-                            modifier = Modifier.weight(1f),
-                            title = stringResource(R.string.resolution),
-                            value = selectedResolution,
-                            options = availableResolutions,
-                            onOptionSelected = { resolution ->
-                                selectedQualityIndex = RecordingQualities.indexOf(
-                                    RecordingQualities.firstOrNull {
-                                        it.resolutionLabel() == resolution && it.frameRate == selectedQuality.frameRate
-                                    } ?: RecordingQualities.first { it.resolutionLabel() == resolution }
-                                ).coerceAtLeast(0)
-                            }
-                        )
-                        CaptureDropdownSelector(
-                            modifier = Modifier.weight(1f),
-                            title = stringResource(R.string.fps),
-                            value = "${selectedQuality.frameRate} FPS",
-                            options = availableFrameRates.map { "$it FPS" },
-                            onOptionSelected = { frameRateLabel ->
-                                val frameRate = frameRateLabel.substringBefore(" ").toIntOrNull() ?: selectedQuality.frameRate
-                                selectedQualityIndex = RecordingQualities.indexOf(
-                                    RecordingQualities.first {
-                                        it.resolutionLabel() == selectedResolution && it.frameRate == frameRate
-                                    }
-                                ).coerceAtLeast(0)
-                            }
-                        )
+                    if (compactScreen) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CaptureDropdownSelector(
+                                modifier = Modifier.fillMaxWidth(),
+                                title = stringResource(R.string.resolution),
+                                value = selectedResolution,
+                                options = availableResolutions,
+                                onOptionSelected = { resolution ->
+                                    selectedQualityIndex = RecordingQualities.indexOf(
+                                        RecordingQualities.firstOrNull {
+                                            it.resolutionLabel() == resolution && it.frameRate == selectedQuality.frameRate
+                                        } ?: RecordingQualities.first { it.resolutionLabel() == resolution }
+                                    ).coerceAtLeast(0)
+                                }
+                            )
+                            CaptureDropdownSelector(
+                                modifier = Modifier.fillMaxWidth(),
+                                title = stringResource(R.string.fps),
+                                value = "${selectedQuality.frameRate} FPS",
+                                options = availableFrameRates.map { "$it FPS" },
+                                onOptionSelected = { frameRateLabel ->
+                                    val frameRate = frameRateLabel.substringBefore(" ").toIntOrNull() ?: selectedQuality.frameRate
+                                    selectedQualityIndex = RecordingQualities.indexOf(
+                                        RecordingQualities.first {
+                                            it.resolutionLabel() == selectedResolution && it.frameRate == frameRate
+                                        }
+                                    ).coerceAtLeast(0)
+                                }
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CaptureDropdownSelector(
+                                modifier = Modifier.weight(1f),
+                                title = stringResource(R.string.resolution),
+                                value = selectedResolution,
+                                options = availableResolutions,
+                                onOptionSelected = { resolution ->
+                                    selectedQualityIndex = RecordingQualities.indexOf(
+                                        RecordingQualities.firstOrNull {
+                                            it.resolutionLabel() == resolution && it.frameRate == selectedQuality.frameRate
+                                        } ?: RecordingQualities.first { it.resolutionLabel() == resolution }
+                                    ).coerceAtLeast(0)
+                                }
+                            )
+                            CaptureDropdownSelector(
+                                modifier = Modifier.weight(1f),
+                                title = stringResource(R.string.fps),
+                                value = "${selectedQuality.frameRate} FPS",
+                                options = availableFrameRates.map { "$it FPS" },
+                                onOptionSelected = { frameRateLabel ->
+                                    val frameRate = frameRateLabel.substringBefore(" ").toIntOrNull() ?: selectedQuality.frameRate
+                                    selectedQualityIndex = RecordingQualities.indexOf(
+                                        RecordingQualities.first {
+                                            it.resolutionLabel() == selectedResolution && it.frameRate == frameRate
+                                        }
+                                    ).coerceAtLeast(0)
+                                }
+                            )
+                        }
                     }
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -286,6 +336,7 @@ private fun CaptureRequestScreen(
                     }
                 }
             }
+        }
         }
     }
 }

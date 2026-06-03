@@ -35,6 +35,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -45,6 +46,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,6 +86,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -278,8 +281,7 @@ private fun RecnowApp() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(padding)
-                .padding(horizontal = 22.dp, vertical = 14.dp),
+                .padding(padding),
             recordingState = recordingState,
             selectedQuality = selectedQuality,
             audioMode = audioMode,
@@ -308,34 +310,101 @@ private fun RecordingHome(
     onAudioModeChange: (AudioMode) -> Unit,
     onRecordClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier.verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        RecordOrb(
-            isRecording = recordingState.isRecording,
-            elapsed = recordingState.formattedElapsed,
-            onClick = onRecordClick
-        )
-        Spacer(Modifier.height(28.dp))
-        QualitySelector(
-            selected = selectedQuality,
-            enabled = !recordingState.isRecording,
-            onSelected = onQualitySelected
-        )
-        Spacer(Modifier.height(16.dp))
-        RecordingOptionsSelector(
-            enabled = !recordingState.isRecording,
-            audioMode = audioMode,
-            onAudioModeChange = onAudioModeChange
-        )
-        Spacer(Modifier.height(22.dp))
-        StatusCard(recordingState, selectedQuality)
-        if (showAds && !recordingState.isRecording) {
-            Spacer(Modifier.height(16.dp))
-            AdBanner()
+    BoxWithConstraints(modifier = modifier) {
+        val compactScreen = maxWidth < 360.dp || maxHeight < 620.dp
+        val expandedScreen = maxWidth >= 720.dp
+        val horizontalPadding = if (compactScreen) 12.dp else 22.dp
+        val verticalPadding = if (compactScreen) 10.dp else 14.dp
+        val sectionGap = if (compactScreen) 12.dp else 18.dp
+        val orbSize = when {
+            compactScreen -> 156.dp
+            expandedScreen -> 236.dp
+            else -> 214.dp
         }
-        Spacer(Modifier.height(24.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (expandedScreen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 1080.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(0.9f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        RecordOrb(
+                            isRecording = recordingState.isRecording,
+                            elapsed = recordingState.formattedElapsed,
+                            orbSize = orbSize,
+                            onClick = onRecordClick
+                        )
+                        Spacer(Modifier.height(sectionGap))
+                        StatusCard(recordingState, selectedQuality)
+                        if (showAds && !recordingState.isRecording) {
+                            Spacer(Modifier.height(sectionGap))
+                            AdBanner()
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.weight(1.1f),
+                        verticalArrangement = Arrangement.spacedBy(sectionGap)
+                    ) {
+                        QualitySelector(
+                            selected = selectedQuality,
+                            enabled = !recordingState.isRecording,
+                            onSelected = onQualitySelected
+                        )
+                        RecordingOptionsSelector(
+                            enabled = !recordingState.isRecording,
+                            audioMode = audioMode,
+                            onAudioModeChange = onAudioModeChange
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 560.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    RecordOrb(
+                        isRecording = recordingState.isRecording,
+                        elapsed = recordingState.formattedElapsed,
+                        orbSize = orbSize,
+                        onClick = onRecordClick
+                    )
+                    Spacer(Modifier.height(sectionGap))
+                    QualitySelector(
+                        selected = selectedQuality,
+                        enabled = !recordingState.isRecording,
+                        onSelected = onQualitySelected
+                    )
+                    Spacer(Modifier.height(sectionGap))
+                    RecordingOptionsSelector(
+                        enabled = !recordingState.isRecording,
+                        audioMode = audioMode,
+                        onAudioModeChange = onAudioModeChange
+                    )
+                    Spacer(Modifier.height(sectionGap))
+                    StatusCard(recordingState, selectedQuality)
+                    if (showAds && !recordingState.isRecording && !compactScreen) {
+                        Spacer(Modifier.height(sectionGap))
+                        AdBanner()
+                    }
+                }
+            }
+            Spacer(Modifier.height(if (compactScreen) 12.dp else 24.dp))
+        }
     }
 }
 
@@ -389,12 +458,23 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
 
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 22.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
+        val compactScreen = maxWidth < 360.dp || maxHeight < 620.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = 720.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = if (compactScreen) 12.dp else 22.dp,
+                    vertical = if (compactScreen) 10.dp else 14.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(if (compactScreen) 12.dp else 16.dp)
+        ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -525,6 +605,7 @@ fun AboutScreen(
                 )
             }
         }
+    }
     }
 }
 
@@ -659,6 +740,7 @@ private fun OptionChip(
 private fun RecordOrb(
     isRecording: Boolean,
     elapsed: String,
+    orbSize: Dp = 214.dp,
     onClick: () -> Unit
 ) {
     val pulse = rememberInfiniteTransition(label = "pulse")
@@ -679,7 +761,7 @@ private fun RecordOrb(
 
     Box(
         modifier = Modifier
-            .size(214.dp)
+            .size(orbSize)
             .scale(scale)
             .clip(CircleShape)
             .clickable(onClick = onClick),
@@ -707,7 +789,7 @@ private fun RecordOrb(
             )
         }
         Surface(
-            modifier = Modifier.size(88.dp),
+            modifier = Modifier.size(orbSize * 0.41f),
             color = Color.White,
             shape = CircleShape,
             shadowElevation = 10.dp
@@ -715,7 +797,7 @@ private fun RecordOrb(
             Box(contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(orbSize * 0.2f)
                         .clip(CircleShape)
                         .background(Color(0xFFFF0000))
                 )
